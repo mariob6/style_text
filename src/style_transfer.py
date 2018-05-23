@@ -10,10 +10,11 @@ from src.vocabulary import Vocabulary
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class StyleTransfer(object):
+
+class StyleTransfer(nn.Module):
 
     def __init__(self, params, vocabulary: Vocabulary):
-
+        super().__init__()
         self.vocabulary = vocabulary
 
         # instantiating the encoder and the generator
@@ -31,7 +32,7 @@ class StyleTransfer(object):
         # instantiating linear networks for hidden transformations
         self.labelsTransform = torch.nn.Linear(1, params.dim_y)
         self.hiddenToVocab = torch.nn.Linear(
-            params.hidden_size, self.vocabulary.vocabSize + 1)
+            params.autoencoder.hidden_size, self.vocabulary.vocabSize + 1)
 
         # instantiating the discriminators
         discriminator0 = Cnn(
@@ -65,20 +66,17 @@ class StyleTransfer(object):
             lr=params.autoencoder.learning_rate,
             betas=params.autoencoder.betas)
         self.discriminator0_optimizer = optim.Adam(
-            self.discriminator.parameters(),
+            self.discriminators[0].parameters(),
             lr=params.discriminator.learning_rate,
             betas=params.discriminator.betas)
         self.discriminator1_optimizer = optim.Adam(
-            self.discriminator.parameters(),
+            self.discriminators[1].parameters(),
             lr=params.discriminator.learning_rate,
             betas=params.discriminator.betas)
 
         # instantiating the loss criterion
         self.rec_loss_criterion = nn.CrossEntropyLoss()
         self.adv_loss_criterion = nn.BCEWithLogitsLoss()
-
-
-        # instantiating some useful functions
 
     def _encodeTokens(self, tokens, hidden):
         """
@@ -126,9 +124,9 @@ class StyleTransfer(object):
     def reconstructionLoss(self, outputs, targets):
         return torch.nn.functional.cross_entropy(outputs, targets)
 
-    def adversarialLoss(x_real, x_fake, label):
+    def adversarialLoss(self, x_real, x_fake, label):
         discriminator = self.discriminators[label]
-        d_real = self.discriminator(x_real)
+        d_real = discriminator(x_real)
         d_fake = self.discriminator(x_fake)
         label = torch.FloatTensor([label])
 
@@ -153,8 +151,8 @@ class StyleTransfer(object):
         originalHidden = []
         transformedHidden = []
         for index, sentence in enumerate(sentences):
-
-            #####   auto-encoder   #####
+            label = labels[index]
+            # AUTO-ENCODER
             # initialize the first hidden state of the encoder
             initialHidden = self.labelsTransform(labels[index])
             initialHidden = initialHidden.unsqueeze(0).unsqueeze(0)
@@ -163,7 +161,6 @@ class StyleTransfer(object):
 
             # encode tokens and extract only content=hidden[:,:,dim_y:]
             content = self._encodeTokens(sentence, initialHidden)
-
 
             # generating the hidden states (yp, zp)
             originalHidden = self.labelsTransform(labels[index])
@@ -180,7 +177,8 @@ class StyleTransfer(object):
             self.generator_optimizer.zero_grad()
 
             # reconstruction loss
-            generatorOutput, h_teacher = self._generateTokens(sentence, originalHidden)
+            generatorOutput, h_teacher = self._generateTokens(
+                sentence, originalHidden)
             self.losses['reconstruction'] += self.reconstructionLoss(
                 generatorOutput, targets)
 

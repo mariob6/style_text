@@ -1,4 +1,4 @@
-class Discriminator(object):
+class DiscriminatorParams(object):
     def __init__(self, embedding_size):
         self.in_channels = 1
         self.out_channels = 3  # to check
@@ -10,7 +10,7 @@ class Discriminator(object):
         self.betas = (0.5, 0.999)
 
 
-class Autoencoder(object):
+class AutoencoderParams(object):
     def __init__(self, embedding_size, dim_y, dim_z):
         self.input_size = embedding_size
         self.hidden_size = dim_y + dim_z
@@ -27,5 +27,5 @@ class Params(object):
     batch_size = 128
     temperature = 0.001
     lambda_GAN = 1
-    autoencoder = Autoencoder(embedding_size, dim_y, dim_z)
-    discriminator = Discriminator(embedding_size)
+    autoencoder = AutoencoderParams(embedding_size, dim_y, dim_z)
+    discriminator = DiscriminatorParams(embedding_size)
