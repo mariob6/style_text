@@ -11,10 +11,10 @@ from src.vocabulary import Vocabulary
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-class StyleTransfer(object):
+class StyleTransfer(nn.Module):
 
     def __init__(self, params, vocabulary: Vocabulary):
-
+        super().__init__()
         self.vocabulary = vocabulary
 
         # instantiating the encoder and the generator
@@ -70,7 +70,7 @@ class StyleTransfer(object):
             lr=params.discriminator.learning_rate,
             betas=params.discriminator.betas)
         self.discriminator1_optimizer = optim.Adam(
-            self.discriminators1.parameters(),
+            self.discriminators[1].parameters(),
             lr=params.discriminator.learning_rate,
             betas=params.discriminator.betas)
 
@@ -192,7 +192,6 @@ class StyleTransfer(object):
 
     def _computeLosses(self, encoder_inputs, generator_inputs, targets, labels):
         self.losses = defaultdict(float)
-
         for index in range(len(encoder_inputs)):
             label = labels[index]
             target = targets[index]
