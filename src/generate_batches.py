@@ -60,7 +60,8 @@ def preprocessSentences(sentences):
         out.extend(sentence)
         return out
 
+    # TODO add padding ???
     encoder_inputs = sentences
-    decoder_inputs = list(map(addGo, sentences))
+    generator_inputs = list(map(addGo, sentences))
     targets = list(map(lambda x: x.append('<eos>'), sentences))
-    return encoder_inputs, decoder_inputs, targets
+    return encoder_inputs, generator_inputs, targets
